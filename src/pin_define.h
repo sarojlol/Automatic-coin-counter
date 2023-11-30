@@ -1,12 +1,11 @@
 #define stepper_current         700 //mA
-#define STALL_PIN               27 // ESP diag pin is attached to
+#define STALL_PIN               26 // ESP diag pin is attached to
 #define SERIAL_PORT Serial2 // HardwareSerial port for ESP
 #define DRIVER_ADDRESS          0b00 // TMC2209 Driver address according to MS1 and MS2
 #define R_SENSE                 0.11f // Match to your driver
 
-#define EN_PIN                  13 // Enable
-#define DIR_PIN                 32 // Direction
-#define STEP_PIN                33 // Step
+#define EN_PIN                  14 // Enable
+#define STEP_PIN                27 // Step
 
 // higher value of STALL_VALUE increases stall sensitivity
 // diag pin pulsed HIGH when SG_RESULT falls below 2*STALL_VALUE
