@@ -7,7 +7,7 @@ void pin_setup();
 
 bool startSW_flag;
 bool startSW_state;
-bool counting_toggle;
+bool counting_toggle = true;
 int start_flag;
 int stall_count;
 
@@ -49,6 +49,7 @@ void motor_handle(void * pvparameter){
       }
       //handle reverse
       else if (start_flag == 2){
+        //if motor stalled again then run forward
         if (motor_stalled())
         {
           motor_stop();
@@ -69,17 +70,31 @@ void motor_handle(void * pvparameter){
           start_flag = 3;
         }
       }
+      //after reverse handle
       else if (start_flag == 3){
         if (stall_count >= 4)
         {
+          stall_count = 5;
           motor_stop();
-          counting_toggle = false; 
+          counting_toggle = false;
+          startSW_flag = true; 
         }
-        if ((millis() - afterStall_delay) > 1000){
-          stall_count = 0;
-          start_flag = 0;
+        else if ((millis() - afterStall_delay) > 1000)
+        {
+          if (stall_count <=5)
+          {
+            stall_count = 0;
+            start_flag = 0;
+          }
         }
       }
+    }
+    if (stall_count >= 5)
+    {
+    digitalWrite(motor_led, LOW);
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+    digitalWrite(motor_led, HIGH);
+    vTaskDelay(200 / portTICK_PERIOD_MS);
     }
   }
 }
@@ -88,6 +103,7 @@ void button_handle(void * pvparameter)
 {
   for (;;)
   {
+    //handle push button
     startSW_state = digitalRead(start_SW);
     if (startSW_state == LOW &! startSW_flag)
     {
@@ -100,13 +116,15 @@ void button_handle(void * pvparameter)
     {
       startSW_flag = false;
     }
-    else if (!counting_toggle)
+
+    //stop counting
+    else if (!counting_toggle && startSW_flag)
     {
       motor_stop();
       digitalWrite(motor_led, LOW);
       start_flag = 0;
     }
-    vTaskDelay(20 / portTICK_PERIOD_MS);
+    vTaskDelay(20 / portTICK_PERIOD_MS); //debounce
   }
 }
 
