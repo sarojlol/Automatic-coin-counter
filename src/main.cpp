@@ -2,6 +2,7 @@
 #include <pin_define.h>
 #include <stepper.h>
 #include <LiquidCrystal_I2C.h>
+#include <EEprom.h>
 
 LiquidCrystal_I2C lcd(0x27, 16, 2); // set the LCD address to 0x27 for a 16 chars and 2 line display
 
@@ -9,6 +10,9 @@ void task_setup();
 void pin_setup();
 void lcd_setup();
 void home_screen();
+void restore_data();
+void reset_screen();
+void save_screen();
 
 bool startSW_flag;
 bool startSW_state;
@@ -20,8 +24,8 @@ int sensor_pin[4] = {baht1_pin, baht2_pin, baht5_pin, baht10_pin};
 bool sensor_data[4];
 bool sensor_flag[4];
 unsigned long sensor_filter[4];
-int raw_baht[4] = {-1, -1, -1, -1};
-int total;
+long raw_baht[4];
+long total;
 int last_total; 
 
 void setup() 
@@ -30,7 +34,9 @@ void setup()
   pin_setup();
   tmc_setup();
   task_setup();
+  eeprom_setup();
   lcd_setup();
+  restore_data();
 }
 
 void loop() {
@@ -152,6 +158,37 @@ void button_handle(void * pvparameter)
       startSW_flag = false;
     }
 
+    bool save_flag;
+    bool reset_flag;
+    unsigned long reset_delay;
+    if (counting_stage == 0)
+    {
+      if (digitalRead(save_button) && save_flag)
+      {
+        save_data(raw_baht[0], raw_baht[1], raw_baht[2], raw_baht[10], total);
+        save_screen();
+        reset_flag = false;
+        save_flag = false;
+      }
+      else if (!digitalRead(save_button) &! save_flag)
+      {
+        reset_flag = true;
+        reset_delay = millis();
+        save_flag = true;
+      }
+
+      if (!digitalRead(save_button) && reset_flag)
+      {
+        if ((millis() - reset_delay) > 100)
+        {
+          reset_data();
+          restore_data();
+          reset_screen();
+          reset_flag = false;
+        }
+      }
+    }
+
     //stop counting
     else if ((counting_stage == 0 || counting_stage == 2) && startSW_flag)
     {
@@ -246,8 +283,6 @@ void sensor_handle(void * pvparameter)
         last_total = total;
       }
     }
-
-    for (int i=0; i<4; i++){raw_baht[i] = max(raw_baht[i], 0);} //limit raw baht data to minimum of 0
     vTaskDelay(10 / portTICK_PERIOD_MS); //delay for other tasks to continue
   }
 }
@@ -267,6 +302,37 @@ void home_screen()
   lcd.print("t:" + String(total) + " ");
 }
 
+void reset_screen()
+{
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Value Is");
+  lcd.setCursor(0,1);
+  lcd.print("Reseted");
+  vTaskDelay(2000 / portTICK_PERIOD_MS);
+  home_screen();
+}
+
+void save_screen()
+{
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Value Is");
+  lcd.setCursor(0,1);
+  lcd.print("Saved");
+  vTaskDelay(2000 / portTICK_PERIOD_MS);
+  home_screen();
+}
+
+void restore_data()
+{
+  raw_baht[0] = EEPROMReadlong(0);
+  raw_baht[1] = EEPROMReadlong(5);
+  raw_baht[2] = EEPROMReadlong(10);
+  raw_baht[3] = EEPROMReadlong(15);
+  total = EEPROMReadlong(20);
+}
+
 void task_setup()
 {
   xTaskCreatePinnedToCore(button_handle,"button_handle", 4096, NULL, 2, NULL, 1);
@@ -278,6 +344,7 @@ void pin_setup()
 {
   pinMode(motor_led, OUTPUT);
   pinMode(start_SW, INPUT_PULLUP);
+  pinMode(save_button, INPUT_PULLUP);
   for (int i=0; i<4; i++){pinMode(sensor_pin[i], INPUT);}
 }
 

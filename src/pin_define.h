@@ -21,6 +21,7 @@
 
 //buttons and led pins
 #define start_SW                    12
+#define save_button                 13
 #define motor_led                   19
 
 //coin sensors pins
