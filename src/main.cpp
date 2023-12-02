@@ -11,7 +11,14 @@ bool counting_toggle = true;
 int start_flag;
 int stall_count;
 
-void setup() {
+int sensor_pin[4] = {baht1_pin, baht2_pin, baht5_pin, baht10_pin};
+bool sensor_data[4];
+bool sensor_flag[4];
+unsigned long sensor_filter[4];
+int raw_baht[4];
+
+void setup() 
+{
   Serial.begin(115200);
   tmc_setup();
   task_setup();
@@ -128,12 +135,87 @@ void button_handle(void * pvparameter)
   }
 }
 
-void task_setup(){
-  xTaskCreatePinnedToCore(button_handle,"button_handle", 1024, NULL, 2, NULL, 1);
-  xTaskCreatePinnedToCore(motor_handle,"motor_handle", 1024, NULL, 1, NULL, 1);
+void sensor_handle(void * pvparameter)
+{
+  for(;;)
+  {
+    //read all sensor state
+    for (int i=0; i<4; i++){sensor_data[i] = digitalRead(sensor_pin[i]);}
+
+    //1 baht
+    if ((sensor_data[0]) &! (sensor_flag[0]))
+    {
+      raw_baht[0] += 1;
+      sensor_filter[0] = millis();
+      sensor_flag[0] = true;
+    }
+    else if ((!sensor_data[0]) && (sensor_flag[0]))
+    {
+      if ((millis() - sensor_filter[0]) > 100)
+      {
+        sensor_flag[0] = false;
+      }
+    }
+
+    //2 baht
+    if ((sensor_data[1]) &! (sensor_flag[1]))
+    {
+      raw_baht[1] += 2;
+      sensor_filter[1] = millis();
+      sensor_flag[1] = true;
+    }
+    else if ((!sensor_data[1]) && (sensor_flag[1]))
+    {
+      if ((millis() - sensor_filter[1]) > 100)
+      {
+        sensor_flag[1] = false;
+      }
+    }
+
+    //5 baht
+    if ((sensor_data[2]) &! (sensor_flag[2]))
+    {
+      raw_baht[2] += 5;
+      sensor_filter[2] = millis();
+      sensor_flag[1] = true;
+    }
+    else if ((!sensor_data[2]) && (sensor_flag[2]))
+    {
+      if ((millis() - sensor_filter[2]) > 100)
+      {
+        sensor_flag[2] = false;
+      }
+    }
+
+    //10 baht
+    if ((sensor_data[3]) &! (sensor_flag[3]))
+    {
+      raw_baht[3] += 10;
+      sensor_filter[3] = millis();
+      sensor_flag[3] = true;
+    }
+    else if ((!sensor_data[3]) && (sensor_flag[3]))
+    {
+      if ((millis() - sensor_filter[3]) > 100)
+      {
+        sensor_flag[3] = false;
+      }
+    }
+
+    for (int i=0; i<4; i++){raw_baht[i] = max(raw_baht[i], 0);} //limit raw baht data to minimum of 0
+  }
 }
 
-void pin_setup(){
+void task_setup()
+{
+  xTaskCreatePinnedToCore(button_handle,"button_handle", 1024, NULL, 2, NULL, 1);
+  xTaskCreatePinnedToCore(motor_handle,"motor_handle", 1024, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(sensor_handle,"sensor_handle", 1024, NULL, 2, NULL, 0);
+}
+
+void pin_setup()
+{
   pinMode(motor_led, OUTPUT);
   pinMode(start_SW, INPUT_PULLUP);
+  for (int i=0; i<4; i++){pinMode(sensor_pin[i], INPUT);}
 }

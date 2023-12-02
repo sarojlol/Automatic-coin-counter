@@ -19,3 +19,8 @@
 
 #define start_SW                    12
 #define motor_led                   19
+
+#define baht1_pin                   35
+#define baht2_pin                   34
+#define baht5_pin                   39
+#define baht10_pin                  36
