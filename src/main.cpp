@@ -141,6 +141,7 @@ void button_handle(void * pvparameter)
         break;
       case 1:
         counting_stage = 0;
+        digitalWrite(motor_led, LOW);
         home_screen();
         break;
       case 2:
