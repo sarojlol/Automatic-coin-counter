@@ -4,7 +4,7 @@
 #include <LiquidCrystal_I2C.h>
 #include <EEprom.h>
 
-LiquidCrystal_I2C lcd(0x27, 16, 2); // set the LCD address to 0x27 for a 16 chars and 2 line display
+LiquidCrystal_I2C lcd(0x27, 20, 4); // set the LCD address to 0x27 for a 16 chars and 2 line display
 
 void task_setup();
 void pin_setup();
@@ -35,8 +35,9 @@ void setup()
   tmc_setup();
   task_setup();
   eeprom_setup();
-  lcd_setup();
   restore_data();
+  lcd_setup();
+
 }
 
 void loop() {
@@ -100,9 +101,13 @@ void motor_handle(void * pvparameter){
           counting_stage = 2;
           lcd.clear();
           lcd.setCursor(0,0);
-          lcd.print("Jammed! Please Clear Stuck Coin");
+          lcd.print("Jammed!");
           lcd.setCursor(0,1);
-          lcd.print("Then Press Start/Stop Button");
+          lcd.print("Please clear stuck");
+          lcd.setCursor(0,2);
+          lcd.print("coin then press");
+          lcd.setCursor(0,3);
+          lcd.print("Start/Stop button");
           startSW_flag = true; 
         }
         else if ((millis() - afterStall_delay) > 1000)
@@ -122,6 +127,9 @@ void motor_handle(void * pvparameter){
     digitalWrite(motor_led, HIGH);
     vTaskDelay(200 / portTICK_PERIOD_MS);
     }
+    if (counting_stage == 0){
+      digitalWrite(motor_led, LOW);
+    }
   }
 }
 
@@ -137,17 +145,22 @@ void button_handle(void * pvparameter)
       {
       case 0:
         counting_stage = 1;
+        lcd.clear();
         home_screen();
         break;
       case 1:
         counting_stage = 0;
         digitalWrite(motor_led, LOW);
+        motor_stop();
+        lcd.clear();
         home_screen();
         break;
       case 2:
         counting_stage = 0;
-        home_screen();
         digitalWrite(motor_led, LOW);
+        lcd.clear();
+        home_screen();
+        
         break;
       }
       stall_count = 0;
@@ -159,8 +172,8 @@ void button_handle(void * pvparameter)
       startSW_flag = false;
     }
 
-    bool save_flag;
-    bool reset_flag;
+    static bool save_flag;
+    static bool reset_flag;
     unsigned long reset_delay;
     if (counting_stage == 0)
     {
@@ -168,25 +181,23 @@ void button_handle(void * pvparameter)
       {
         save_data(raw_baht[0], raw_baht[1], raw_baht[2], raw_baht[10], total);
         save_screen();
-        reset_flag = false;
         save_flag = false;
       }
       else if (!digitalRead(save_button) &! save_flag)
       {
-        reset_flag = true;
-        reset_delay = millis();
         save_flag = true;
       }
 
-      if (!digitalRead(save_button) && reset_flag)
+      if (digitalRead(reste_SW) && reset_flag)
       {
-        if ((millis() - reset_delay) > 100)
-        {
-          reset_data();
-          restore_data();
-          reset_screen();
-          reset_flag = false;
-        }
+        reset_data();
+        restore_data();
+        reset_screen();
+        reset_flag = false;
+      }
+      if (!digitalRead(reste_SW) &! reset_flag)
+      {
+        reset_flag = true;
       }
     }
 
@@ -220,7 +231,7 @@ void sensor_handle(void * pvparameter)
       }
       else if ((sensor_data[0]) && (sensor_flag[0]))
       {
-        if ((millis() - sensor_filter[0]) > 20)
+        if ((millis() - sensor_filter[0]) > 100)
         {
           sensor_flag[0] = false;
         }
@@ -277,7 +288,7 @@ void sensor_handle(void * pvparameter)
         }
       }
 
-      total = raw_baht[0] + (raw_baht[1] * 1) + (raw_baht[2] * 5) + (raw_baht[3] * 10);
+      total = raw_baht[0] + (raw_baht[1] * 2) + (raw_baht[2] * 5) + (raw_baht[3] * 10);
       if (last_total != total){
         lcd.setCursor(9,1);
         lcd.print(total);
@@ -306,9 +317,9 @@ void home_screen()
 void reset_screen()
 {
   lcd.clear();
-  lcd.setCursor(0,0);
+  lcd.setCursor(6,1);
   lcd.print("Value Is");
-  lcd.setCursor(0,1);
+  lcd.setCursor(7,2);
   lcd.print("Reseted");
   vTaskDelay(2000 / portTICK_PERIOD_MS);
   home_screen();
@@ -317,9 +328,9 @@ void reset_screen()
 void save_screen()
 {
   lcd.clear();
-  lcd.setCursor(0,0);
+  lcd.setCursor(6,1);
   lcd.print("Value Is");
-  lcd.setCursor(0,1);
+  lcd.setCursor(7,2);
   lcd.print("Saved");
   vTaskDelay(2000 / portTICK_PERIOD_MS);
   home_screen();
@@ -346,16 +357,17 @@ void pin_setup()
   pinMode(motor_led, OUTPUT);
   pinMode(start_SW, INPUT_PULLUP);
   pinMode(save_button, INPUT_PULLUP);
-  for (int i=0; i<4; i++){pinMode(sensor_pin[i], INPUT);}
+  pinMode(reste_SW, INPUT_PULLUP);
+  for (int i=0; i<4; i++){pinMode(sensor_pin[i], INPUT_PULLUP);}
 }
 
 void lcd_setup()
 {
   lcd.init(I2C_SDA, I2C_SCL); // initialize the lcd to use user defined I2C pins
 	lcd.backlight();
-	lcd.setCursor(4,0);
+	lcd.setCursor(6,1);
 	lcd.print("Automatic");
-	lcd.setCursor(2,1);
+	lcd.setCursor(4,2);
 	lcd.print("Coin Counter");
   delay(1000);
   lcd.clear();

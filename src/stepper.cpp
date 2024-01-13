@@ -50,7 +50,6 @@ bool filtered_stalled;
 
 void motor(int speed, bool direction){
     step_dir = direction;
-    driver.shaft(direction);
     ledcChangeFrequency(0, speed, 8);
     stall_delay = millis();
     motorStop = false;
@@ -65,6 +64,7 @@ void motor_stop(){
 }
 
 void motor_run(){
+    driver.shaft(step_dir);
     if (!motorStop)
     {
         digitalWrite(EN_PIN, LOW);
