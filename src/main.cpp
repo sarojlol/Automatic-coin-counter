@@ -3,6 +3,7 @@
 #include <stepper.h>
 #include <LiquidCrystal_I2C.h>
 #include <EEprom.h>
+void coinFull_screen(int coin);
 
 LiquidCrystal_I2C lcd(0x27, 20, 4); // set the LCD address to 0x27 for a 16 chars and 2 line display
 
@@ -25,6 +26,7 @@ bool sensor_data[4];
 bool sensor_flag[4];
 unsigned long sensor_filter[4];
 long raw_baht[4];
+long limit_count[4] = {1, 1, 1, 1};
 long total;
 int last_total; 
 
@@ -209,6 +211,28 @@ void button_handle(void * pvparameter)
       digitalWrite(motor_led, LOW);
       start_flag = 0;
     }
+
+    //coin is full
+    if ((raw_baht[0] >= 33 * limit_count[0]))
+    {
+      coinFull_screen(1);
+      limit_count[0]++;
+    }
+    else if ((raw_baht[1] >= 33 * limit_count[1]))
+    {
+      coinFull_screen(2);
+      limit_count[1]++;
+    }
+    else if ((raw_baht[2] >= 33 * limit_count[2]))
+    {
+      coinFull_screen(5);
+      limit_count[2]++;
+    }
+    else if ((raw_baht[3] >= 33 * limit_count[3]))
+    {
+      coinFull_screen(10);
+      limit_count[3]++;
+    }
     vTaskDelay(20 / portTICK_PERIOD_MS); //debounce
   }
 }
@@ -295,9 +319,36 @@ void sensor_handle(void * pvparameter)
         lcd.print(total);
         last_total = total;
       }
+
+      if ((raw_baht[0] >= 9999999) || (raw_baht[1] >= 99999999) || (raw_baht[2] >= 9999999) || (raw_baht[3] >= 9999999) || (total >= 99999999999999))
+      {
+        lcd.setCursor(1, 0);
+        lcd.print("Limit reached!!");
+        motor_stop();
+        counting_stage = 99;
+        save_data(raw_baht[0], raw_baht[1], raw_baht[2], raw_baht[10], total);
+      }
     }
     vTaskDelay(10 / portTICK_PERIOD_MS); //delay for other tasks to continue
   }
+}
+
+void coinFull_screen(int coin){
+  motor_stop();
+  vTaskDelay(1000 / portTICK_PERIOD_MS);
+  lcd.setCursor(0, 1);
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print(String(coin) + " baht coin is full");
+  lcd.setCursor(0,1);
+  lcd.print("Please clear coin");
+  lcd.setCursor(0,2);
+  lcd.print("Then press");
+  lcd.setCursor(0,3);
+  lcd.print("Start/Stop button");
+  counting_stage = 2;
+  startSW_flag = true;
+  save_data(raw_baht[0], raw_baht[1], raw_baht[2], raw_baht[10], total);
 }
 
 void home_screen()
@@ -320,7 +371,7 @@ void reset_screen()
   lcd.clear();
   lcd.setCursor(6,1);
   lcd.print("Value Is");
-  lcd.setCursor(7,2);
+  lcd.setCursor(6,2);
   lcd.print("Reseted");
   vTaskDelay(2000 / portTICK_PERIOD_MS);
   home_screen();
