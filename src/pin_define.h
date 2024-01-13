@@ -35,3 +35,5 @@
 #define I2C_SDA                     21
 #define I2C_SCL                     22
 
+//bettery monitor pin
+#define battery_pin                 34

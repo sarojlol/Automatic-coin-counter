@@ -3,7 +3,6 @@
 #include <stepper.h>
 #include <LiquidCrystal_I2C.h>
 #include <EEprom.h>
-void coinFull_screen(int coin);
 
 LiquidCrystal_I2C lcd(0x27, 20, 4); // set the LCD address to 0x27 for a 16 chars and 2 line display
 
@@ -14,6 +13,7 @@ void home_screen();
 void restore_data();
 void reset_screen();
 void save_screen();
+void coinFull_screen(int coin);
 
 bool startSW_flag;
 bool startSW_state;
@@ -30,15 +30,17 @@ long limit_count[4] = {1, 1, 1, 1};
 long total;
 int last_total; 
 
+int battery_percentage;
+
 void setup() 
 {
   Serial.begin(115200);
   pin_setup();
   tmc_setup();
-  task_setup();
   eeprom_setup();
-  restore_data();
   lcd_setup();
+  task_setup();
+  restore_data();
 
 }
 
@@ -333,9 +335,32 @@ void sensor_handle(void * pvparameter)
   }
 }
 
+void battery_task(void * pvparameter)
+{
+  for (;;)
+  {
+    int raw_battery = analogRead(battery_pin);
+    battery_percentage = map(raw_battery, 0, 4095, 0, 100);
+    if ((counting_stage == 1) || (counting_stage == 0))
+    {
+      lcd.setCursor(16, 3);
+      lcd.print(String(battery_percentage) + "%");
+    }
+    if (battery_percentage <= 20){
+      motor_stop();
+      vTaskDelay(2000 / portTICK_PERIOD_MS);
+      lcd.setCursor(4, 1);
+      lcd.print("Battery LOW");
+      counting_stage = 99;
+      save_data(raw_baht[0], raw_baht[1], raw_baht[2], raw_baht[10], total);
+    }
+    vTaskDelay(10000 / portTICK_PERIOD_MS);
+  }
+}
+
 void coinFull_screen(int coin){
   motor_stop();
-  vTaskDelay(1000 / portTICK_PERIOD_MS);
+  vTaskDelay(2000 / portTICK_PERIOD_MS);
   lcd.setCursor(0, 1);
   lcd.clear();
   lcd.setCursor(0,0);
@@ -364,6 +389,8 @@ void home_screen()
   lcd.print("10:" + String(raw_baht[3]) + " ");
   lcd.setCursor(0, 2);
   lcd.print("Total:" + String(total) + " ");
+  lcd.setCursor(8, 3);
+  lcd.print("Battery:" + String(battery_percentage) + "%");
 }
 
 void reset_screen()
@@ -402,6 +429,7 @@ void task_setup()
   xTaskCreatePinnedToCore(button_handle,"button_handle", 4096, NULL, 2, NULL, 1);
   xTaskCreatePinnedToCore(motor_handle,"motor_handle", 4096, NULL, 1, NULL, 1);
   xTaskCreatePinnedToCore(sensor_handle,"sensor_handle", 10000, NULL, 3, NULL, 1);
+  xTaskCreatePinnedToCore(battery_task,"battery_task", 2048, NULL, 1, NULL, 1);
 }
 
 void pin_setup()
@@ -410,6 +438,7 @@ void pin_setup()
   pinMode(start_SW, INPUT_PULLUP);
   pinMode(save_button, INPUT_PULLUP);
   pinMode(reste_SW, INPUT_PULLUP);
+  pinMode(battery_pin, INPUT);
   for (int i=0; i<4; i++){pinMode(sensor_pin[i], INPUT_PULLUP);}
 }
 
