@@ -108,6 +108,7 @@ void motor_handle(void * pvparameter){
           lcd.print("coin then press");
           lcd.setCursor(0,3);
           lcd.print("Start/Stop button");
+          save_data(raw_baht[0], raw_baht[1], raw_baht[2], raw_baht[10], total);
           startSW_flag = true; 
         }
         else if ((millis() - afterStall_delay) > 1000)
@@ -242,7 +243,7 @@ void sensor_handle(void * pvparameter)
       {
         raw_baht[1] ++;
         sensor_filter[1] = millis();
-        lcd.setCursor(7,0);
+        lcd.setCursor(12,0);
         lcd.print(raw_baht[1]);
         sensor_flag[1] = true;
       }
@@ -259,7 +260,7 @@ void sensor_handle(void * pvparameter)
       {
         raw_baht[2] ++;
         sensor_filter[2] = millis();
-        lcd.setCursor(13,0);
+        lcd.setCursor(2, 1);
         lcd.print(raw_baht[2]);
         sensor_flag[2] = true;
       }
@@ -276,7 +277,7 @@ void sensor_handle(void * pvparameter)
       {
         raw_baht[3] ++;
         sensor_filter[3] = millis();
-        lcd.setCursor(3, 1);
+        lcd.setCursor(13, 1);
         lcd.print(raw_baht[3]);
         sensor_flag[3] = true;
       }
@@ -290,7 +291,7 @@ void sensor_handle(void * pvparameter)
 
       total = raw_baht[0] + (raw_baht[1] * 2) + (raw_baht[2] * 5) + (raw_baht[3] * 10);
       if (last_total != total){
-        lcd.setCursor(9,1);
+        lcd.setCursor(6, 2);
         lcd.print(total);
         last_total = total;
       }
@@ -304,14 +305,14 @@ void home_screen()
   lcd.clear();
   lcd.setCursor(0,0);
   lcd.print("1:" + String(raw_baht[0]) + " ");
-  lcd.setCursor(5,0);
+  lcd.setCursor(10,0);
   lcd.print("2:" + String(raw_baht[1]) + " ");
-  lcd.setCursor(11,0);
-  lcd.print("5:" + String(raw_baht[2]) + " ");
   lcd.setCursor(0,1);
+  lcd.print("5:" + String(raw_baht[2]) + " ");
+  lcd.setCursor(10,1);
   lcd.print("10:" + String(raw_baht[3]) + " ");
-  lcd.setCursor(7, 1);
-  lcd.print("t:" + String(total) + " ");
+  lcd.setCursor(0, 2);
+  lcd.print("Total:" + String(total) + " ");
 }
 
 void reset_screen()
