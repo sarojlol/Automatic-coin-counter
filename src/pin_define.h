@@ -26,10 +26,10 @@
 #define motor_led                   14
 
 //coin sensors pins
-#define baht1_pin                   32
-#define baht2_pin                   33
-#define baht5_pin                   25
-#define baht10_pin                  26
+#define baht1_pin                   26
+#define baht2_pin                   32
+#define baht5_pin                   33
+#define baht10_pin                  25
 
 //lcd config
 #define I2C_SDA                     21

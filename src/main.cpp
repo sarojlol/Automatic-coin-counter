@@ -246,19 +246,18 @@ void sensor_handle(void * pvparameter)
     if (counting_stage == 1)
     {
       for (int i=0; i<4; i++){sensor_data[i] = digitalRead(sensor_pin[i]);} //read all sensor state
-
       //1 baht
       if ((!sensor_data[0]) &! (sensor_flag[0]))
       {
         raw_baht[0] ++;
-        sensor_filter[0] = millis();
         lcd.setCursor(2, 0);
         lcd.print(raw_baht[0]);
         sensor_flag[0] = true;
+        sensor_filter[0] = millis();
       }
       else if ((sensor_data[0]) && (sensor_flag[0]))
       {
-        if ((millis() - sensor_filter[0]) > 100)
+        if ((millis() - sensor_filter[0]) > 80)
         {
           sensor_flag[0] = false;
         }
@@ -275,7 +274,7 @@ void sensor_handle(void * pvparameter)
       }
       else if ((sensor_data[1]) && (sensor_flag[1]))
       {
-        if ((millis() - sensor_filter[1]) > 20)
+        if ((millis() - sensor_filter[1]) > 150)
         {
           sensor_flag[1] = false;
         }
@@ -292,7 +291,7 @@ void sensor_handle(void * pvparameter)
       }
       else if ((sensor_data[2]) && (sensor_flag[2]))
       {
-        if ((millis() - sensor_filter[2]) > 20)
+        if ((millis() - sensor_filter[2]) > 180)
         {
           sensor_flag[2] = false;
         }
@@ -309,7 +308,7 @@ void sensor_handle(void * pvparameter)
       }
       else if ((sensor_data[3]) && (sensor_flag[3]))
       {
-        if ((millis() - sensor_filter[3]) > 20)
+        if ((millis() - sensor_filter[3]) > 150)
         {
           sensor_flag[3] = false;
         }
@@ -340,13 +339,13 @@ void battery_task(void * pvparameter)
   for (;;)
   {
     int raw_battery = analogRead(battery_pin);
-    battery_percentage = map(raw_battery, 0, 4095, 0, 100);
+    battery_percentage = map(raw_battery, 0, 3313, 0, 100);
     if ((counting_stage == 1) || (counting_stage == 0))
     {
       lcd.setCursor(16, 3);
       lcd.print(String(battery_percentage) + "%");
     }
-    if (battery_percentage <= 20){
+    if (battery_percentage <= 30){
       motor_stop();
       vTaskDelay(2000 / portTICK_PERIOD_MS);
       lcd.setCursor(4, 1);
