@@ -38,10 +38,10 @@ void setup()
   pin_setup();
   tmc_setup();
   eeprom_setup();
+  delay(10);
+  restore_data();
   lcd_setup();
   task_setup();
-  restore_data();
-
 }
 
 void loop() {
@@ -59,7 +59,7 @@ void motor_handle(void * pvparameter){
       //notmal operation
       if (!motor_stalled() && start_flag == 0)
       {
-        motor(forware_speed, false);
+        motor(forware_speed, true);
         digitalWrite(motor_led, HIGH);
         start_flag = 1;
       }
@@ -69,7 +69,7 @@ void motor_handle(void * pvparameter){
         motor_stop();
         vTaskDelay(jamm_dir_delay / portTICK_PERIOD_MS);
         reverse_delay = millis();
-        motor(reverse_speed, true);
+        motor(reverse_speed, false);
         start_flag = 2;
         //if motor stalled during reversing
       }
@@ -80,7 +80,7 @@ void motor_handle(void * pvparameter){
         {
           motor_stop();
           vTaskDelay(jamm_dir_delay / portTICK_PERIOD_MS);
-          motor(after_jamm_forward_speed, false);
+          motor(after_jamm_forward_speed, true);
           stall_count ++;
           afterStall_delay = millis();
           start_flag = 3;
@@ -90,7 +90,7 @@ void motor_handle(void * pvparameter){
         {
           motor_stop();
           vTaskDelay(jamm_dir_delay / portTICK_PERIOD_MS);
-          motor(after_jamm_forward_speed, false);
+          motor(after_jamm_forward_speed, true);
           stall_count ++;
           afterStall_delay = millis();
           start_flag = 3;
@@ -247,32 +247,33 @@ void sensor_handle(void * pvparameter)
     {
       for (int i=0; i<4; i++){sensor_data[i] = digitalRead(sensor_pin[i]);} //read all sensor state
       //1 baht
-      if ((!sensor_data[0]) &! (sensor_flag[0]))
+      Serial.println(sensor_data[2]);
+      if ((sensor_data[0]) &! (sensor_flag[0]))
       {
         raw_baht[0] ++;
-        lcd.setCursor(2, 0);
-        lcd.print(raw_baht[0]);
+        lcd.setCursor(0,0);
+        lcd.print("1:" + String(raw_baht[0]) + " ");
         sensor_flag[0] = true;
         sensor_filter[0] = millis();
       }
-      else if ((sensor_data[0]) && (sensor_flag[0]))
+      else if ((!sensor_data[0]) && (sensor_flag[0]))
       {
-        if ((millis() - sensor_filter[0]) > 80)
+        if ((millis() - sensor_filter[0]) > 70)
         {
           sensor_flag[0] = false;
         }
       }
 
       //2 baht
-      if ((!sensor_data[1]) &! (sensor_flag[1]))
+      if ((sensor_data[1]) &! (sensor_flag[1]))
       {
         raw_baht[1] ++;
         sensor_filter[1] = millis();
-        lcd.setCursor(12,0);
-        lcd.print(raw_baht[1]);
+        lcd.setCursor(10,0);
+        lcd.print("2:" + String(raw_baht[1]) + " ");
         sensor_flag[1] = true;
       }
-      else if ((sensor_data[1]) && (sensor_flag[1]))
+      else if ((!sensor_data[1]) && (sensor_flag[1]))
       {
         if ((millis() - sensor_filter[1]) > 150)
         {
@@ -281,34 +282,34 @@ void sensor_handle(void * pvparameter)
       }
 
       //5 baht
-      if ((!sensor_data[2]) &! (sensor_flag[2]))
+      if ((sensor_data[2]) &! (sensor_flag[2]))
       {
         raw_baht[2] ++;
         sensor_filter[2] = millis();
-        lcd.setCursor(2, 1);
-        lcd.print(raw_baht[2]);
+        lcd.setCursor(0,1);
+        lcd.print("5:" + String(raw_baht[2]) + " ");
         sensor_flag[2] = true;
       }
-      else if ((sensor_data[2]) && (sensor_flag[2]))
+      else if ((!sensor_data[2]) && (sensor_flag[2]))
       {
-        if ((millis() - sensor_filter[2]) > 180)
+        if ((millis() - sensor_filter[2]) > 70)
         {
           sensor_flag[2] = false;
         }
       }
 
       //10 baht
-      if ((!sensor_data[3]) &! (sensor_flag[3]))
+      if ((sensor_data[3]) &! (sensor_flag[3]))
       {
         raw_baht[3] ++;
         sensor_filter[3] = millis();
-        lcd.setCursor(13, 1);
-        lcd.print(raw_baht[3]);
+        lcd.setCursor(10,1);
+        lcd.print("10:" + String(raw_baht[3]) + " ");
         sensor_flag[3] = true;
       }
-      else if ((sensor_data[3]) && (sensor_flag[3]))
+      else if ((!sensor_data[3]) && (sensor_flag[3]))
       {
-        if ((millis() - sensor_filter[3]) > 150)
+        if ((millis() - sensor_filter[3]) > 70)
         {
           sensor_flag[3] = false;
         }
@@ -316,8 +317,8 @@ void sensor_handle(void * pvparameter)
 
       total = raw_baht[0] + (raw_baht[1] * 2) + (raw_baht[2] * 5) + (raw_baht[3] * 10);
       if (last_total != total){
-        lcd.setCursor(6, 2);
-        lcd.print(total);
+        lcd.setCursor(0, 2);
+        lcd.print("Total:" + String(total) + " ");
         last_total = total;
       }
 
@@ -342,8 +343,8 @@ void battery_task(void * pvparameter)
     battery_percentage = map(raw_battery, 0, 3313, 0, 100);
     if ((counting_stage == 1) || (counting_stage == 0))
     {
-      lcd.setCursor(16, 3);
-      lcd.print(String(battery_percentage) + "%");
+      lcd.setCursor(8, 3);
+      lcd.print("Battery:" + String(battery_percentage) + "%");
     }
     if (battery_percentage <= 30){
       motor_stop();
@@ -353,7 +354,7 @@ void battery_task(void * pvparameter)
       counting_stage = 99;
       save_data(raw_baht[0], raw_baht[1], raw_baht[2], raw_baht[10], total);
     }
-    vTaskDelay(10000 / portTICK_PERIOD_MS);
+    vTaskDelay(20000 / portTICK_PERIOD_MS);
   }
 }
 
@@ -416,11 +417,29 @@ void save_screen()
 
 void restore_data()
 {
-  raw_baht[0] = EEPROMReadlong(0);
-  raw_baht[1] = EEPROMReadlong(5);
-  raw_baht[2] = EEPROMReadlong(10);
-  raw_baht[3] = EEPROMReadlong(15);
-  total = EEPROMReadlong(20);
+  raw_baht[0] = EEPROMReadlong(1);
+  raw_baht[1] = EEPROMReadlong(10);
+  raw_baht[2] = EEPROMReadlong(20);
+  raw_baht[3] = EEPROMReadlong(30);
+  total = EEPROMReadlong(40);
+
+    //coin is full
+  while ((raw_baht[0] >= 33 * limit_count[0]))
+  {
+    limit_count[0]++;
+  }
+  while ((raw_baht[1] >= 33 * limit_count[1]))
+  {
+    limit_count[1]++;
+  }
+  while ((raw_baht[2] >= 33 * limit_count[2]))
+  {
+    limit_count[2]++;
+  }
+  while ((raw_baht[3] >= 33 * limit_count[3]))
+  {
+    limit_count[3]++;
+  }
 }
 
 void task_setup()
@@ -451,5 +470,6 @@ void lcd_setup()
 	lcd.print("Coin Counter");
   delay(1000);
   lcd.clear();
+  lcd.setCursor(0,0);
   home_screen();
 }

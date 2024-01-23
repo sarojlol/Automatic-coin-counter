@@ -1,6 +1,6 @@
 
 //tmc2209 config
-#define stepper_current             700 //mA
+#define stepper_current             900 //mA
 #define STALL_PIN                   19 // ESP diag pin is attached to
 #define SERIAL_PORT                 Serial2 // HardwareSerial port for ESP
 #define DRIVER_ADDRESS              0b00 // TMC2209 Driver address according to MS1 and MS2
@@ -11,13 +11,13 @@
 // diag pin pulsed HIGH when SG_RESULT falls below 2*STALL_VALUE
 // must be in StealthChop Mode for stallguard to work
 // Value of TCOOLTHRS must be greater than TSTEP & TPWMTHRS
-#define STALL_VALUE                 50// [0..255]
+#define STALL_VALUE                 10// [0..255]
 
 //motor speed config
-#define forware_speed               500
+#define forware_speed               400
 #define after_jamm_forward_speed    300
-#define reverse_speed               500
-#define jamm_dir_delay              500
+#define reverse_speed               200
+#define jamm_dir_delay              50
 
 //buttons and led pins
 #define start_SW                    12

@@ -69,7 +69,7 @@ void motor_run(){
     {
         digitalWrite(EN_PIN, LOW);
         ledcWrite(0, 128);
-        if ((millis() - stall_delay) > 100){
+        if ((millis() - stall_delay) > 200){
             if (stalled){
                 filtered_stalled = true;
             }

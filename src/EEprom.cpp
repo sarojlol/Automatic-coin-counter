@@ -37,18 +37,19 @@ void EEPROMWritelong(int address, long value)
 
 void save_data(long baht_1, long baht_2, long baht_5, long baht_10, long total)
 {
-    EEPROMWritelong(0, baht_1);
-    EEPROMWritelong(5, baht_2);
-    EEPROMWritelong(10, baht_5);
-    EEPROMWritelong(15, baht_10);
-    EEPROMWritelong(20, total);
+    EEPROMWritelong(1, baht_1);
+    EEPROMWritelong(10, baht_2);
+    EEPROMWritelong(20, baht_5);
+    EEPROMWritelong(30, baht_10);
+    EEPROMWritelong(40, total);
 }
 
 void reset_data()
 {
-    EEPROMWritelong(0, 0);
-    EEPROMWritelong(5, 0);
-    EEPROMWritelong(10, 0);
-    EEPROMWritelong(15, 0);
-    EEPROMWritelong(20, 0);
+    for (int i = 0; i < 254; i++)
+    {
+        ee.writeByte(i, 0);
+        delay(10);
+    }
+
 }
