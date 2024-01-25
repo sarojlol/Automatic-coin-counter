@@ -299,7 +299,7 @@ void sensor_handle(void * pvparameter)
       }
 
       //10 baht
-      if ((sensor_data[3]) &! (sensor_flag[3]))
+      if ((!sensor_data[3]) &! (sensor_flag[3]))
       {
         raw_baht[3] ++;
         sensor_filter[3] = millis();
@@ -307,9 +307,9 @@ void sensor_handle(void * pvparameter)
         lcd.print("10:" + String(raw_baht[3]) + " ");
         sensor_flag[3] = true;
       }
-      else if ((!sensor_data[3]) && (sensor_flag[3]))
+      else if ((sensor_data[3]) && (sensor_flag[3]))
       {
-        if ((millis() - sensor_filter[3]) > 70)
+        if ((millis() - sensor_filter[3]) > 120)
         {
           sensor_flag[3] = false;
         }
@@ -318,7 +318,7 @@ void sensor_handle(void * pvparameter)
       total = raw_baht[0] + (raw_baht[1] * 2) + (raw_baht[2] * 5) + (raw_baht[3] * 10);
       if (last_total != total){
         lcd.setCursor(0, 2);
-        lcd.print("Total:" + String(total) + " ");
+        lcd.print("Total:" + String(total) + " BAHT");
         last_total = total;
       }
 
@@ -388,7 +388,7 @@ void home_screen()
   lcd.setCursor(10,1);
   lcd.print("10:" + String(raw_baht[3]) + " ");
   lcd.setCursor(0, 2);
-  lcd.print("Total:" + String(total) + " ");
+  lcd.print("Total:" + String(total) + " BAHT");
   lcd.setCursor(8, 3);
   lcd.print("Battery:" + String(battery_percentage) + "%");
 }
